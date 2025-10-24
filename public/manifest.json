@@ -1,0 +1,55 @@
+{
+  "manifest_version": 3,
+  "name": "WanderLingo - AI Travel Translator",
+  "version": "1.0.0",
+  "description": "AI-powered translation and document processing for travelers. Translate text, documents, and get conversation suggestions in 50+ languages.",
+  
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting",
+    "tabs"
+  ],
+  
+  "host_permissions": [
+    "https://api.mymemory.translated.net/*",
+    "https://libretranslate.com/*",
+    "https://translate.googleapis.com/*",
+    "https://api.cognitive.microsofttranslator.com/*"
+  ],
+  
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "WanderLingo - Travel Translator"
+  },
+  
+  "background": {
+    "service_worker": "background.js"
+  },
+  
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_end"
+    }
+  ],
+  
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "assets/*",
+        "*.js",
+        "*.css",
+        "*.html"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  
+  
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self';"
+  }
+}

@@ -1,0 +1,243 @@
+/* Content script styles for LocaLingo Chrome Extension */
+
+/* Floating button styles */
+#localingo-floating-btn {
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+  width: 50px !important;
+  height: 50px !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 24px !important;
+  cursor: pointer !important;
+  z-index: 10000 !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+  transition: all 0.3s ease !important;
+  user-select: none !important;
+  border: none !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+#localingo-floating-btn:hover {
+  transform: scale(1.1) !important;
+}
+
+/* Translation overlay styles */
+#localingo-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  z-index: 10001 !important;
+  display: none !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+#localingo-overlay .modal-content {
+  background: white !important;
+  border-radius: 12px !important;
+  padding: 20px !important;
+  max-width: 500px !important;
+  width: 90% !important;
+  max-height: 80vh !important;
+  overflow-y: auto !important;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3) !important;
+}
+
+#localingo-overlay .modal-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 20px !important;
+}
+
+#localingo-overlay .modal-header h2 {
+  margin: 0 !important;
+  color: #333 !important;
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+}
+
+#localingo-overlay .close-btn {
+  background: none !important;
+  border: none !important;
+  font-size: 24px !important;
+  cursor: pointer !important;
+  color: #666 !important;
+  padding: 0 !important;
+  width: 30px !important;
+  height: 30px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+#localingo-overlay .close-btn:hover {
+  color: #333 !important;
+}
+
+#localingo-overlay .form-group {
+  margin-bottom: 20px !important;
+}
+
+#localingo-overlay .form-group label {
+  display: block !important;
+  margin-bottom: 8px !important;
+  font-weight: 600 !important;
+  color: #333 !important;
+  font-size: 14px !important;
+}
+
+#localingo-overlay .form-group select,
+#localingo-overlay .form-group textarea {
+  width: 100% !important;
+  padding: 10px !important;
+  border: 1px solid #ddd !important;
+  border-radius: 6px !important;
+  font-size: 14px !important;
+  font-family: inherit !important;
+  box-sizing: border-box !important;
+}
+
+#localingo-overlay .form-group textarea {
+  min-height: 80px !important;
+  resize: vertical !important;
+}
+
+#localingo-overlay .btn {
+  background: #4CAF50 !important;
+  color: white !important;
+  border: none !important;
+  padding: 12px 24px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  width: 100% !important;
+  transition: all 0.2s !important;
+}
+
+#localingo-overlay .btn:hover {
+  background: #45a049 !important;
+}
+
+#localingo-overlay .btn:disabled {
+  background: #ccc !important;
+  cursor: not-allowed !important;
+}
+
+#localingo-overlay .result {
+  background: #f5f5f5 !important;
+  padding: 15px !important;
+  border-radius: 6px !important;
+  min-height: 60px !important;
+  display: none !important;
+  margin-top: 15px !important;
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+}
+
+#localingo-overlay .action-buttons {
+  margin-top: 20px !important;
+  text-align: center !important;
+  display: flex !important;
+  gap: 10px !important;
+}
+
+#localingo-overlay .action-buttons .btn {
+  width: auto !important;
+  flex: 1 !important;
+}
+
+#localingo-overlay .action-buttons .btn.primary {
+  background: #2196F3 !important;
+}
+
+#localingo-overlay .action-buttons .btn.primary:hover {
+  background: #1976D2 !important;
+}
+
+#localingo-overlay .action-buttons .btn.secondary {
+  background: #FF9800 !important;
+}
+
+#localingo-overlay .action-buttons .btn.secondary:hover {
+  background: #F57C00 !important;
+}
+
+/* Translation tooltip styles */
+.localingo-tooltip {
+  position: absolute !important;
+  background: #4CAF50 !important;
+  color: white !important;
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+  font-size: 14px !important;
+  z-index: 10000 !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+  max-width: 300px !important;
+  word-wrap: break-word !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.localingo-tooltip .original-text {
+  font-size: 12px !important;
+  opacity: 0.8 !important;
+  margin-top: 4px !important;
+}
+
+/* Translated text highlighting */
+.localingo-translated {
+  border: 2px solid #4CAF50 !important;
+  border-radius: 4px !important;
+  padding: 4px !important;
+  margin: 2px !important;
+  background: rgba(76, 175, 80, 0.1) !important;
+}
+
+.localingo-translated .translation {
+  color: #2e7d32 !important;
+  font-weight: 500 !important;
+}
+
+.localingo-translated .original {
+  color: #666 !important;
+  font-style: italic !important;
+  font-size: 0.9em !important;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  #localingo-floating-btn {
+    width: 45px !important;
+    height: 45px !important;
+    font-size: 20px !important;
+    top: 15px !important;
+    right: 15px !important;
+  }
+  
+  #localingo-overlay .modal-content {
+    width: 95% !important;
+    padding: 15px !important;
+  }
+  
+  #localingo-overlay .action-buttons {
+    flex-direction: column !important;
+  }
+  
+  #localingo-overlay .action-buttons .btn {
+    width: 100% !important;
+  }
+}
+
+
+

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LocaLingo - Travel Translator</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      width: 380px;
+      min-height: 500px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    
+    .popup-header {
+      padding: 20px;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+    }
+    
+    .popup-header h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+    
+    .popup-header p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
+    .popup-content {
+      padding: 20px;
+    }
+    
+    .quick-actions {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .action-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      font-size: 16px;
+      font-weight: 500;
+    }
+    
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: translateY(-2px);
+    }
+    
+    .action-icon {
+      font-size: 20px;
+      width: 24px;
+      text-align: center;
+    }
+    
+    .action-text {
+      flex: 1;
+    }
+    
+    .action-arrow {
+      font-size: 16px;
+      opacity: 0.7;
+    }
+    
+    .language-selector {
+      margin-bottom: 20px;
+    }
+    
+    .language-selector label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .language-selector select {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      color: #333;
+      font-size: 14px;
+    }
+    
+    .quick-translate {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    
+    .quick-translate h3 {
+      margin-bottom: 12px;
+      font-size: 16px;
+    }
+    
+    .translate-input {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      color: #333;
+      font-size: 14px;
+      margin-bottom: 12px;
+      resize: vertical;
+      min-height: 60px;
+    }
+    
+    .translate-btn {
+      width: 100%;
+      padding: 12px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    
+    .translate-btn:hover {
+      background: #45a049;
+    }
+    
+    .translate-result {
+      margin-top: 12px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.4;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+    }
+    
+    .footer {
+      text-align: center;
+      padding: 16px;
+      font-size: 12px;
+      opacity: 0.8;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .status-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: #4CAF50;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="popup-header">
+    <h1>🌍 LocaLingo</h1>
+    <p>AI Travel Translator</p>
+  </div>
+  
+  <div class="popup-content">
+    <div class="language-selector">
+      <label for="targetLanguage">Translate to:</label>
+      <select id="targetLanguage">
+        <option value="Vietnamese">Vietnamese</option>
+        <option value="Thai">Thai</option>
+        <option value="Indonesian">Indonesian</option>
+        <option value="Malay">Malay</option>
+        <option value="Filipino">Filipino</option>
+        <option value="Spanish">Spanish</option>
+        <option value="French">French</option>
+        <option value="German">German</option>
+        <option value="Japanese">Japanese</option>
+        <option value="Korean">Korean</option>
+        <option value="Chinese">Chinese</option>
+        <option value="Arabic">Arabic</option>
+        <option value="Hindi">Hindi</option>
+        <option value="Portuguese">Portuguese</option>
+        <option value="Russian">Russian</option>
+        <option value="Italian">Italian</option>
+        <option value="Dutch">Dutch</option>
+        <option value="Turkish">Turkish</option>
+        <option value="Polish">Polish</option>
+        <option value="Greek">Greek</option>
+        <option value="Hebrew">Hebrew</option>
+        <option value="Persian">Persian</option>
+        <option value="Urdu">Urdu</option>
+        <option value="Bengali">Bengali</option>
+        <option value="Tamil">Tamil</option>
+        <option value="Telugu">Telugu</option>
+        <option value="Gujarati">Gujarati</option>
+        <option value="Kannada">Kannada</option>
+        <option value="Malayalam">Malayalam</option>
+        <option value="Punjabi">Punjabi</option>
+        <option value="Marathi">Marathi</option>
+        <option value="Nepali">Nepali</option>
+        <option value="Sinhala">Sinhala</option>
+        <option value="Burmese">Burmese</option>
+        <option value="Khmer">Khmer</option>
+        <option value="Lao">Lao</option>
+      </select>
+    </div>
+    
+    <div class="quick-actions">
+      <button class="action-btn" id="openTravelerMode">
+        <span class="action-icon">🌍</span>
+        <span class="action-text">Traveler Mode</span>
+        <span class="action-arrow">→</span>
+      </button>
+      
+      <button class="action-btn" id="translatePage">
+        <span class="action-icon">📄</span>
+        <span class="action-text">Translate This Page</span>
+        <span class="action-arrow">→</span>
+      </button>
+      
+      <button class="action-btn" id="translateSelected">
+        <span class="action-icon">✂️</span>
+        <span class="action-text">Translate Selected Text</span>
+        <span class="action-arrow">→</span>
+      </button>
+      
+      <button class="action-btn" id="documentTranslator">
+        <span class="action-icon">📄</span>
+        <span class="action-text">Translate Documents</span>
+        <span class="action-arrow">→</span>
+      </button>
+    </div>
+    
+    <div class="quick-translate">
+      <h3>Quick Translate</h3>
+      <textarea 
+        id="quickInput" 
+        class="translate-input" 
+        placeholder="Type something to translate..."
+      ></textarea>
+      <button id="quickTranslateBtn" class="translate-btn">Translate</button>
+      <div id="quickResult" class="translate-result" style="display: none;"></div>
+    </div>
+  </div>
+  
+  <div class="footer">
+    <span class="status-indicator"></span>
+    Ready to translate
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
+
+
+
