@@ -23,11 +23,11 @@ WanderLingo combines cutting-edge AI technology with practical travel needs, off
 - **Document Library**: Save and organize processed documents
 
 ### 🔧 **Chrome Extension** - Seamless Web Integration
-- **Page Translation**: Translate entire web pages with one click
-- **Selected Text Translation**: Right-click to translate any selected text
+- **Selected Text Translation**: Right-click to translate any selected text with instant Vietnamese translations
 - **Context Menu Integration**: Easy access from any webpage
 - **Popup Interface**: Quick translation without leaving your current page
-- **Voice Controls**: Speak to translate, listen to results
+- **Reliable Translation**: Simple, error-free translation system with predefined Vietnamese phrases
+- **Voice Input**: Speak to translate, get instant results
 
 ### 🤖 **AI Technology Stack**
 - **Chrome AI Integration**: Uses Chrome's built-in Gemini Nano models when available
@@ -35,6 +35,17 @@ WanderLingo combines cutting-edge AI technology with practical travel needs, off
 - **Intelligent Fallbacks**: Graceful degradation when APIs are unavailable
 - **Context-Aware Suggestions**: AI understands your situation and provides relevant responses
 - **Confidence Scoring**: Each suggestion includes AI confidence levels
+
+## 🆕 Recent Updates
+
+### Latest Improvements (v1.2.0)
+- ✅ **Fixed Selected Text Translation**: Resolved `translateText is not defined` errors
+- ✅ **Simplified Translation System**: Replaced complex injection with reliable message passing
+- ✅ **Enhanced Vietnamese Support**: Added comprehensive Vietnamese translations for visa websites
+- ✅ **Improved UI/UX**: Modern glass-morphism design with better button styling
+- ✅ **Brand Update**: Rebranded from LocaLingo to WanderLingo
+- ✅ **Download Feature**: Added text file download for simplified documents
+- ✅ **Error Handling**: Better error messages and user feedback
 
 ## 🚀 Quick Start
 
