@@ -179,6 +179,7 @@ export async function simplify(
 }
 
 async function translateText(text: string, targetLanguage: string): Promise<string> {
+  console.log('translateText called with:', { textLength: text.length, targetLanguage })
   const targetCode = LANGUAGE_CODES[targetLanguage] || 'en'
   
   if (targetCode === 'en') {
@@ -186,7 +187,11 @@ async function translateText(text: string, targetLanguage: string): Promise<stri
   }
   
   try {
-    return await translationService.translate(text, 'en', targetCode)
+    console.log('Calling translationService.translate...')
+    const result = await translationService.translate(text, 'en', targetCode)
+    console.log('Translation result length:', result.length)
+    console.log('Translation result preview:', result.substring(0, 200))
+    return result
   } catch (error) {
     console.error('Translation failed:', error)
     // Fallback to language indicator if translation fails

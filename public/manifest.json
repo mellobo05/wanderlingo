@@ -15,7 +15,10 @@
     "https://api.mymemory.translated.net/*",
     "https://libretranslate.com/*",
     "https://translate.googleapis.com/*",
-    "https://api.cognitive.microsofttranslator.com/*"
+    "https://api.cognitive.microsofttranslator.com/*",
+    "https://evisa.gov.vn/*",
+    "https://*.gov.vn/*",
+    "https://*.gov/*"
   ],
   
   "action": {

@@ -35,12 +35,32 @@ function reducer(state: State, action: Action): State {
 }
 
 export function useLibrary() {
+  // Load from localStorage on initialization
   const [state, dispatch] = useReducer(reducer, { docs: [] })
 
-  // Warn about volatility (not persisted)
+  // Load saved documents from localStorage on mount
   useEffect(() => {
-    console.info('Library is in-memory only; export your data to keep it.')
+    try {
+      const saved = localStorage.getItem('wanderlingo-library')
+      if (saved) {
+        const docs = JSON.parse(saved) as SavedDoc[]
+        dispatch({ type: 'replaceAll', docs })
+        console.log('Loaded', docs.length, 'documents from localStorage')
+      }
+    } catch (error) {
+      console.error('Failed to load library from localStorage:', error)
+    }
   }, [])
+
+  // Save to localStorage whenever docs change
+  useEffect(() => {
+    try {
+      localStorage.setItem('wanderlingo-library', JSON.stringify(state.docs))
+      console.log('Saved', state.docs.length, 'documents to localStorage')
+    } catch (error) {
+      console.error('Failed to save library to localStorage:', error)
+    }
+  }, [state.docs])
 
   const add = (doc: SavedDoc) => dispatch({ type: 'add', doc })
   const remove = (id: string) => dispatch({ type: 'remove', id })

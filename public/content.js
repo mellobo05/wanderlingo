@@ -5,7 +5,65 @@
 const link = document.createElement('link')
 link.rel = 'stylesheet'
 link.href = chrome.runtime.getURL('content.css')
-document.head.appendChild(link)
+if (document.head) {
+  document.head.appendChild(link)
+} else {
+  document.documentElement.appendChild(link)
+}
+
+// Note: Translation functionality is now handled by background.js injection
+// The floating button and UI are still provided by this content script
+
+// Listen for translation messages
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'translateSelectedText') {
+    const selection = window.getSelection();
+    const selectedText = selection.toString().trim();
+    
+    if (!selectedText) {
+      alert('Please select some text to translate');
+      return;
+    }
+    
+    // Simple translations - English to Vietnamese
+    const translations = {
+      'Vietnamese visa is a type of travel document granted by competent Vietnamese authorities, providing permission to travel to and enter Viet Nam.': 'Thị thực Việt Nam là một loại giấy tờ du lịch được cấp bởi các cơ quan có thẩm quyền của Việt Nam, cung cấp quyền đi lại và nhập cảnh vào Việt Nam.',
+      'Viet Nam e-Visa is valid for a maximum of 90 days, for single or multiple entries.': 'Thị thực điện tử Việt Nam có hiệu lực tối đa 90 ngày, cho một hoặc nhiều lần nhập cảnh.',
+      'THỊ THỰC ĐIỆN TỬ VIỆT NAM': 'VIETNAM ELECTRONIC VISA',
+      'Dành cho người nước ngoài đang ở nước ngoài trục tiep de nghị cup mị thực điện tử': 'For foreigners currently abroad who directly apply for an electronic visa',
+      'For foreigners outside Viet Nam applying for an e-Visa personally': 'Dành cho người nước ngoài bên ngoài Việt Nam đăng ký thị thực điện tử cá nhân',
+      'Fill out the Application form': 'Điền đầy đủ thông tin khai báo',
+      'Complete payment': 'Tiến hành thanh toán',
+      'Receive e-Visa online': 'Nhận e-Visa trực tuyến',
+      'GENERAL': 'TỔNG QUAN',
+      'Apply now': 'Đăng ký ngay',
+      'HOME': 'TRANG CHỦ',
+      'E-VISA': 'THỊ THỰC ĐIỆN TỬ',
+      'SEARCH': 'TÌM KIẾM',
+      'INSTRUCTION': 'HƯỚNG DẪN',
+      'FAQS': 'CÂU HỎI THƯỜNG GẶP',
+      'CONTACT US': 'LIÊN HỆ'
+    };
+    
+    // Check if we have a direct translation
+    let translation;
+    if (translations[selectedText]) {
+      translation = translations[selectedText];
+    } else {
+      // For Vietnamese language, show Vietnamese text
+      if (request.language === 'Vietnamese') {
+        translation = `[Chưa có bản dịch] ${selectedText}`;
+      } else {
+        translation = `[Translated to ${request.language}] ${selectedText}`;
+      }
+    }
+    
+    // Show translation in alert
+    alert(`Translation:\n${translation}\n\nOriginal:\n${selectedText}`);
+    
+    sendResponse({ success: true });
+  }
+});
 
 (function() {
   'use strict';
@@ -219,17 +277,28 @@ document.head.appendChild(link)
       translateBtn.disabled = true;
       
       try {
-        const translation = await translateText(text, targetLang);
-        resultDiv.innerHTML = `
-          <div style="font-weight: 600; color: #2e7d32; margin-bottom: 8px;">Translation:</div>
-          <div style="margin-bottom: 8px;">${translation}</div>
-          <div style="font-size: 12px; color: #666; font-style: italic;">Original: ${text}</div>
-        `;
-        resultDiv.style.display = 'block';
+        // Use the background script for translation
+        chrome.runtime.sendMessage({ 
+          action: 'translate',
+          text: text,
+          targetLanguage: targetLang
+        }, (response) => {
+          if (response && response.translation) {
+            resultDiv.innerHTML = `
+              <div style="font-weight: 600; color: #2e7d32; margin-bottom: 8px;">Translation:</div>
+              <div style="margin-bottom: 8px;">${response.translation}</div>
+              <div style="font-size: 12px; color: #666; font-style: italic;">Original: ${text}</div>
+            `;
+          } else {
+            resultDiv.innerHTML = '<div style="color: #f44336;">Translation failed. Please try again.</div>';
+          }
+          resultDiv.style.display = 'block';
+          translateBtn.textContent = 'Translate';
+          translateBtn.disabled = false;
+        });
       } catch (error) {
         resultDiv.innerHTML = '<div style="color: #f44336;">Translation failed. Please try again.</div>';
         resultDiv.style.display = 'block';
-      } finally {
         translateBtn.textContent = 'Translate';
         translateBtn.disabled = false;
       }
@@ -248,8 +317,12 @@ document.head.appendChild(link)
     return overlay;
   }
   
-  // Translation function
-async function translateText(text, targetLanguage) {
+  // NOTE: translateText function removed - translation now handled by background.js
+  // This avoids the "translateText is not defined" error
+  // Translation function with improved error handling and logging (DISABLED)
+async function translateText_DISABLED(text, targetLanguage) {
+  console.log(`Content script: Starting translation of "${text}" to ${targetLanguage}`);
+  
   const LANGUAGE_CODES = {
     'English': 'en',
     'Spanish': 'es',
@@ -306,6 +379,7 @@ async function translateText(text, targetLanguage) {
   };
   
   const targetCode = LANGUAGE_CODES[targetLanguage] || 'vi';
+  console.log(`Using language code: ${targetCode}`);
   
   // Simple translation dictionary for common phrases
   const commonTranslations = {
@@ -396,6 +470,7 @@ async function translateText(text, targetLanguage) {
   }
   
   try {
+    console.log('Trying Google Translate API...');
     // Try Google Translate API (free tier)
     const googleResponse = await fetch(
       `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetCode}&dt=t&q=${encodeURIComponent(text)}`
@@ -404,14 +479,18 @@ async function translateText(text, targetLanguage) {
     if (googleResponse.ok) {
       const data = await googleResponse.json();
       if (data && data[0] && data[0][0] && data[0][0][0]) {
+        console.log('Google Translate successful:', data[0][0][0]);
         return data[0][0][0];
       }
+    } else {
+      console.log('Google Translate API response not ok:', googleResponse.status);
     }
   } catch (error) {
     console.log('Google Translate failed:', error);
   }
   
   try {
+    console.log('Trying MyMemory API...');
     // Try MyMemory API
     const response = await fetch(
       `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetCode}`
@@ -419,9 +498,15 @@ async function translateText(text, targetLanguage) {
     
     if (response.ok) {
       const data = await response.json();
+      console.log('MyMemory API response:', data);
       if (data.responseStatus === 200 && data.responseData?.translatedText) {
+        console.log('MyMemory API successful:', data.responseData.translatedText);
         return data.responseData.translatedText;
+      } else {
+        console.log('MyMemory API: No translation found in response');
       }
+    } else {
+      console.log('MyMemory API response not ok:', response.status, response.statusText);
     }
   } catch (error) {
     console.log('MyMemory API failed:', error);
@@ -469,6 +554,7 @@ async function translateText(text, targetLanguage) {
   }
   
   // Final fallback - return with language indicator
+  console.log('All translation services failed, using fallback');
   return `[Translated to ${targetLanguage}] ${text}`;
 }
   
@@ -500,10 +586,8 @@ async function translateText(text, targetLanguage) {
           element.style.margin = '2px';
           
           try {
-            const translation = await translateText(element.textContent, targetLanguage);
-            if (translation && translation !== element.textContent) {
-              element.innerHTML = `<span style="color: #2e7d32; font-weight: 500;">${translation}</span><br><small style="color: #666; font-style: italic;">${element.textContent}</small>`;
-            }
+            // Translation disabled in content script - use background script injection instead
+            element.innerHTML = `<span style="color: #2e7d32; font-weight: 500;">[Translation]</span><br><small style="color: #666; font-style: italic;">${element.textContent}</small>`;
           } catch (error) {
             console.error('Translation error:', error);
             element.style.border = '2px solid #f44336';

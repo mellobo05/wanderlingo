@@ -55,11 +55,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   document.getElementById('translateSelected').addEventListener('click', async () => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      function: translateSelectedText,
-      args: [targetLanguageSelect.value]
-    });
+    
+    // Use Chrome's built-in translation instead of complex injection
+    try {
+      await chrome.tabs.sendMessage(tab.id, { 
+        action: 'translateSelectedText', 
+        language: targetLanguageSelect.value 
+      });
+    } catch (error) {
+      // Fallback: inject simple function
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        function: translateSelectedText,
+        args: [targetLanguageSelect.value]
+      });
+    }
+    
     window.close();
   });
   

@@ -4,6 +4,8 @@
   padding: 1.5rem;
   color: var(--fg, #222);
   background: var(--bg, #fff);
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 }
 
 .high-contrast {
@@ -15,23 +17,55 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid #e0e0e0;
 }
 
-header h1 {
-  margin: 0;
-  font-size: 1.8rem;
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logo-icon {
+  font-size: 3rem;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  filter: drop-shadow(0 2px 4px rgba(102, 126, 234, 0.3));
 }
 
-.tagline {
-  margin: 0.5rem 0 1rem 0;
+.logo-text h1 {
+  margin: 0;
+  font-size: 2.2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.logo-text .tagline {
+  margin: 0.25rem 0 0 0;
   color: #666;
   font-size: 1rem;
   font-weight: 500;
+  opacity: 0.9;
 }
 
 .mode-selector {
@@ -51,11 +85,13 @@ header h1 {
 
 .traveler-interface,
 .nomad-interface {
-  background: #f8f9fa;
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
   padding: 2rem;
   margin-bottom: 2rem;
-  border: 1px solid #e9ecef;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .quick-translate-section h2,
@@ -292,7 +328,89 @@ textarea {
 .two-col { align-items: stretch; }
 .two-col > div { flex: 1 1 48%; min-width: 260px; }
 
-.actions { margin: 1rem 0; }
+.actions { 
+  margin: 1rem 0; 
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* Improved Button Styles */
+.actions button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  min-width: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.actions button:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.actions button:not(:disabled):active {
+  transform: translateY(0);
+}
+
+/* Load Button */
+.actions button:nth-child(1) {
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.actions button:nth-child(1):hover {
+  box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+}
+
+/* Translate & Simplify Button */
+.actions button:nth-child(2) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.actions button:nth-child(2):hover {
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+/* Save Document Button */
+.actions button:nth-child(3) {
+  background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
+}
+
+.actions button:nth-child(3):hover {
+  box-shadow: 0 8px 25px rgba(255, 152, 0, 0.4);
+}
+
+/* Download Text Button */
+.actions button:nth-child(4) {
+  background: linear-gradient(135deg, #E91E63 0%, #C2185B 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(233, 30, 99, 0.3);
+}
+
+.actions button:nth-child(4):hover {
+  box-shadow: 0 8px 25px rgba(233, 30, 99, 0.4);
+}
 
 .readtime { font-size: .9rem; color: #555; font-weight: 400; }
 

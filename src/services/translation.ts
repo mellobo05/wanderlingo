@@ -14,18 +14,27 @@ export interface TranslationProvider {
 // Chrome AI (Gemini Nano) Provider - Primary provider
 export class ChromeAIProvider implements TranslationProvider {
   name = 'Chrome AI (Gemini Nano)'
-  private _isAvailable: boolean = false
+  private _availabilityChecked: boolean = false
 
   constructor() {
     this.checkAvailability()
   }
 
   private async checkAvailability(): Promise<void> {
-    this._isAvailable = await chromeAIService.isChromeAIAvailable()
+    if (this._availabilityChecked) return
+    
+    try {
+      await chromeAIService.isChromeAIAvailable()
+      this._availabilityChecked = true
+    } catch (error) {
+      console.warn('Chrome AI availability check failed:', error)
+      this._availabilityChecked = true
+    }
   }
 
   isAvailable(): boolean {
-    return this._isAvailable
+    // For now, disable Chrome AI to use more reliable fallback providers
+    return false
   }
 
   async translate(text: string, from: string, to: string): Promise<string> {
@@ -248,18 +257,29 @@ export class FallbackProvider implements TranslationProvider {
 
   async translate(text: string, from: string, to: string): Promise<string> {
     try {
+      console.log(`Attempting translation: "${text.substring(0, 100)}..." from ${from} to ${to}`)
+      console.log(`Text length: ${text.length} characters`)
+      
+      // Split long text into chunks (MyMemory has a 500 character limit)
+      if (text.length > 500) {
+        console.log('Text is too long, splitting into chunks...')
+        return await this.translateInChunks(text, from, to)
+      }
+      
       // Use MyMemory API as a free fallback
       const response = await fetch(
         `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`
       )
       
       if (!response.ok) {
-        throw new Error('MyMemory API failed')
+        throw new Error(`MyMemory API failed with status: ${response.status}`)
       }
       
       const data = await response.json()
+      console.log('MyMemory API response:', data)
       
       if (data.responseStatus === 200 && data.responseData?.translatedText) {
+        console.log('Translation successful:', data.responseData.translatedText)
         return data.responseData.translatedText
       }
       
@@ -339,6 +359,54 @@ export class FallbackProvider implements TranslationProvider {
       return `[Translated to ${targetLang}] ${text}`
     }
   }
+
+  private async translateInChunks(text: string, from: string, to: string): Promise<string> {
+    // Split text into sentences first, then into chunks
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0)
+    const chunks: string[] = []
+    let currentChunk = ''
+    
+    for (const sentence of sentences) {
+      const trimmedSentence = sentence.trim()
+      if (currentChunk.length + trimmedSentence.length + 1 > 400) {
+        if (currentChunk) {
+          chunks.push(currentChunk.trim())
+          currentChunk = trimmedSentence
+        } else {
+          // Single sentence is too long, split it
+          chunks.push(trimmedSentence.substring(0, 400))
+          currentChunk = trimmedSentence.substring(400)
+        }
+      } else {
+        currentChunk += (currentChunk ? '. ' : '') + trimmedSentence
+      }
+    }
+    
+    if (currentChunk) {
+      chunks.push(currentChunk.trim())
+    }
+    
+    console.log(`Split text into ${chunks.length} chunks`)
+    
+    // Translate each chunk
+    const translatedChunks: string[] = []
+    for (let i = 0; i < chunks.length; i++) {
+      console.log(`Translating chunk ${i + 1}/${chunks.length}`)
+      try {
+        const translatedChunk = await this.translate(chunks[i], from, to)
+        translatedChunks.push(translatedChunk)
+        // Add a small delay to avoid rate limiting
+        if (i < chunks.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100))
+        }
+      } catch (error) {
+        console.error(`Failed to translate chunk ${i + 1}:`, error)
+        translatedChunks.push(`[Translation failed for chunk ${i + 1}]`)
+      }
+    }
+    
+    return translatedChunks.join('. ')
+  }
 }
 
 // Translation service manager
@@ -354,8 +422,12 @@ export class TranslationService {
   }
 
   private initializeProviders() {
-    // Add Chrome AI as the primary provider
-    this.providers.push(new ChromeAIProvider())
+    // Add fallback provider first for immediate availability
+    this.providers.push(this.fallbackProvider)
+
+    // Add LibreTranslate as a free option
+    const libreUrl = import.meta.env.VITE_LIBRETRANSLATE_URL || 'https://libretranslate.com'
+    this.providers.push(new LibreTranslateProvider(libreUrl))
 
     // Check for Google Translate API key
     const googleApiKey = import.meta.env.VITE_GOOGLE_TRANSLATE_API_KEY
@@ -370,27 +442,32 @@ export class TranslationService {
       this.providers.push(new AzureTranslatorProvider(azureKey, azureRegion))
     }
 
-    // Add LibreTranslate as a free option
-    const libreUrl = import.meta.env.VITE_LIBRETRANSLATE_URL || 'https://libretranslate.com'
-    this.providers.push(new LibreTranslateProvider(libreUrl))
-
-    // Always add fallback provider last
-    this.providers.push(this.fallbackProvider)
+    // Add Chrome AI as the last provider (currently disabled)
+    this.providers.push(new ChromeAIProvider())
   }
 
   async translate(text: string, from: string, to: string): Promise<string> {
+    console.log(`TranslationService: Starting translation of "${text}" from ${from} to ${to}`)
+    console.log(`Available providers:`, this.getAvailableProviders())
+    
     for (const provider of this.providers) {
       if (provider.isAvailable()) {
         try {
-          return await provider.translate(text, from, to)
+          console.log(`Trying provider: ${provider.name}`)
+          const result = await provider.translate(text, from, to)
+          console.log(`Translation successful with ${provider.name}:`, result)
+          return result
         } catch (error) {
           console.warn(`${provider.name} failed:`, error)
           continue
         }
+      } else {
+        console.log(`Provider ${provider.name} is not available`)
       }
     }
 
     // If all providers fail, use fallback
+    console.log('All providers failed, using fallback provider')
     return this.fallbackProvider.translate(text, from, to)
   }
 

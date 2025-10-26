@@ -6,6 +6,7 @@ export interface EditorProps {
   source: string
   setSource: (v: string) => void
   onFetchUrl: () => void
+  loading?: boolean
 }
 
 export function Editor(props: EditorProps) {
@@ -22,8 +23,8 @@ export function Editor(props: EditorProps) {
           value={props.url}
           onChange={(e) => props.setUrl(e.target.value)}
         />
-        <button onClick={props.onFetchUrl} aria-label="Fetch URL">
-          Load
+        <button onClick={props.onFetchUrl} aria-label="Fetch URL" disabled={props.loading}>
+          {props.loading ? 'Loading...' : 'Load'}
         </button>
       </div>
 

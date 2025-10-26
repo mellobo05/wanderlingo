@@ -3,7 +3,7 @@ import './App.css'
 import { Controls } from './components/Controls'
 import { Editor } from './components/Editor'
 import { Output } from './components/Output'
-import { simplify, speak, stopSpeaking } from './services/ai'
+import { simplify, speak, stopSpeaking, translateAndSimplify } from './services/ai'
 import type { ComplexityLevel } from './services/ai'
 import { useLibrary } from './store/useLibrary'
 import { aiContextService, type AISuggestion } from './services/ai-context'
@@ -29,16 +29,42 @@ function App() {
   const [suggestionsLoading, setSuggestionsLoading] = useState(false)
   const [chromeAIStatus, setChromeAIStatus] = useState<'checking' | 'available' | 'unavailable'>('checking')
 
-  const { docs, add, remove, exportJson, importJson } = useLibrary()
+  const { docs, add, remove, exportJson } = useLibrary()
 
   const dirAttr = rtl ? 'rtl' : 'ltr'
   const appClass = useMemo(() => (highContrast ? 'app high-contrast' : 'app'), [highContrast])
 
+  // Function to extract readable text from HTML
+  function extractTextFromHTML(html: string): string {
+    // Remove script and style elements
+    let text = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    text = text.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    text = text.replace(/<noscript[^>]*>[\s\S]*?<\/noscript>/gi, '')
+    
+    // Remove HTML tags
+    text = text.replace(/<[^>]*>/g, ' ')
+    
+    // Decode HTML entities
+    text = text.replace(/&nbsp;/g, ' ')
+    text = text.replace(/&amp;/g, '&')
+    text = text.replace(/&lt;/g, '<')
+    text = text.replace(/&gt;/g, '>')
+    text = text.replace(/&quot;/g, '"')
+    text = text.replace(/&#39;/g, "'")
+    
+    // Clean up whitespace
+    text = text.replace(/\s+/g, ' ').trim()
+    
+    // Remove common non-content patterns
+    text = text.replace(/\{[^}]*\}/g, '') // Remove JSON-like structures
+    text = text.replace(/<!--[\s\S]*?-->/g, '') // Remove HTML comments
+    
+    return text
+  }
+
   // Voice input functionality
   useEffect(() => {
     const voiceInputBtn = document.getElementById('voiceInputBtn')
-    const voiceOutputBtn = document.getElementById('voiceOutputBtn')
-    const stopVoiceBtn = document.getElementById('stopVoiceBtn')
 
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition
@@ -90,90 +116,9 @@ function App() {
       voiceInputBtn.style.display = 'none'
     }
 
-    // Voice output functionality
-    if ('speechSynthesis' in window) {
-      if (voiceOutputBtn) {
-        voiceOutputBtn.addEventListener('click', () => {
-          // Stop any current speech first
-          speechSynthesis.cancel()
-          
-          const text = simplified || source
-          if (text) {
-            const utterance = new SpeechSynthesisUtterance(text)
-            utterance.lang = getLanguageCode(language)
-            utterance.rate = 0.9
-            utterance.pitch = 1
-            utterance.volume = 1
-            
-            utterance.onend = () => {
-              if (voiceOutputBtn) voiceOutputBtn.style.display = 'flex'
-              if (stopVoiceBtn) stopVoiceBtn.style.display = 'none'
-            }
-            
-            utterance.onerror = () => {
-              if (voiceOutputBtn) voiceOutputBtn.style.display = 'flex'
-              if (stopVoiceBtn) stopVoiceBtn.style.display = 'none'
-            }
-            
-            speechSynthesis.speak(utterance)
-            
-            if (voiceOutputBtn) voiceOutputBtn.style.display = 'none'
-            if (stopVoiceBtn) stopVoiceBtn.style.display = 'flex'
-          }
-        })
-      }
-
-      if (stopVoiceBtn) {
-        stopVoiceBtn.addEventListener('click', () => {
-          speechSynthesis.cancel()
-          if (voiceOutputBtn) voiceOutputBtn.style.display = 'flex'
-          if (stopVoiceBtn) stopVoiceBtn.style.display = 'none'
-        })
-      }
-    } else {
-      if (voiceOutputBtn) voiceOutputBtn.style.display = 'none'
-    }
+    // Voice output functionality removed - no longer needed
   }, [simplified, source, language])
 
-  // Helper function to get language code for speech synthesis
-  const getLanguageCode = (language: string) => {
-    const codes: { [key: string]: string } = {
-      'Vietnamese': 'vi-VN',
-      'Thai': 'th-TH',
-      'Spanish': 'es-ES',
-      'French': 'fr-FR',
-      'German': 'de-DE',
-      'Japanese': 'ja-JP',
-      'Korean': 'ko-KR',
-      'Chinese': 'zh-CN',
-      'Arabic': 'ar-SA',
-      'Hindi': 'hi-IN',
-      'Portuguese': 'pt-PT',
-      'Russian': 'ru-RU',
-      'Italian': 'it-IT',
-      'Dutch': 'nl-NL',
-      'Turkish': 'tr-TR',
-      'Polish': 'pl-PL',
-      'Greek': 'el-GR',
-      'Hebrew': 'he-IL',
-      'Persian': 'fa-IR',
-      'Urdu': 'ur-PK',
-      'Bengali': 'bn-BD',
-      'Tamil': 'ta-IN',
-      'Telugu': 'te-IN',
-      'Gujarati': 'gu-IN',
-      'Kannada': 'kn-IN',
-      'Malayalam': 'ml-IN',
-      'Punjabi': 'pa-IN',
-      'Marathi': 'mr-IN',
-      'Nepali': 'ne-NP',
-      'Sinhala': 'si-LK',
-      'Burmese': 'my-MM',
-      'Khmer': 'km-KH',
-      'Lao': 'lo-LA'
-    }
-    return codes[language] || 'en-US'
-  }
 
   // Generate AI-powered suggestions
   const generateAISuggestions = async (input: string, context: string = '') => {
@@ -233,13 +178,65 @@ function App() {
 
   async function onFetchUrl() {
     if (!url) return
+    
+    setLoading(true)
     try {
+      console.log('Fetching URL:', url)
+      
+      // Use Chrome extension API to fetch the URL content
+      if (typeof (window as any).chrome !== 'undefined' && (window as any).chrome.runtime) {
+        // Send message to background script to fetch the URL
+        const response = await (window as any).chrome.runtime.sendMessage({
+          action: 'fetchUrl',
+          url: url
+        })
+        
+        if (response.success) {
+          console.log('Raw HTML content received:', response.content.substring(0, 500))
+          
+          // Better content extraction
+          const text = extractTextFromHTML(response.content)
+          console.log('Extracted text:', text.substring(0, 500))
+          
+          // Check if we got meaningful content (not just metadata)
+          if (text.trim().length < 100 || text.includes('Vietnam National Electronic Visa system --> -->')) {
+            console.log('Content appears to be SPA metadata, trying tab-based extraction...')
+            
+            // Try the tab-based method for SPAs
+            const tabResponse = await (window as any).chrome.runtime.sendMessage({
+              action: 'fetchUrlWithTab',
+              url: url
+            })
+            
+            if (tabResponse.success) {
+              console.log('Tab-based extraction successful:', tabResponse.content.substring(0, 500))
+              setSource(tabResponse.content.slice(0, 5000))
+              console.log('URL content loaded successfully via tab method')
+            } else {
+              throw new Error(tabResponse.error || 'Both fetch methods failed')
+            }
+          } else {
+            setSource(text.slice(0, 5000))
+            console.log('URL content loaded successfully')
+          }
+        } else {
+          throw new Error(response.error || 'Failed to fetch URL')
+        }
+      } else {
+        // Fallback: try direct fetch (will likely fail due to CORS)
+        console.log('Chrome extension API not available, trying direct fetch...')
       const res = await fetch(url)
       const html = await res.text()
-      const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+        const text = extractTextFromHTML(html)
       setSource(text.slice(0, 5000))
+      }
     } catch (e) {
-      console.error(e)
+      console.error('Error fetching URL:', e)
+      // Show user-friendly error message
+      const errorMessage = e instanceof Error ? e.message : 'Unknown error occurred'
+      setSource(`Error loading URL: ${errorMessage}\n\nPlease try:\n1. Copy and paste the text directly into the text area below\n2. Use the browser's "View Page Source" and copy the text\n3. Try a different URL`)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -251,13 +248,24 @@ function App() {
       if (language === 'English') {
         result = await simplify(source, { complexity, contextTopic })
       } else {
-        // Direct translation using simple API calls
-        const translatedText = await translateTextDirect(source, language)
+        // Use the proper translation service for non-English languages
+        console.log('Translating to:', language)
+        console.log('Source text length:', source.length)
+        console.log('Source text preview:', source.substring(0, 200))
+        
+        const translatedText = await translateAndSimplify(source, { 
+          complexity, 
+          contextTopic, 
+          targetLanguage: language 
+        })
+        
+        console.log('Translation result:', translatedText)
+        
         result = {
-          simplified: translatedText,
-          keyPoints: [translatedText],
-          termExplanations: [],
-          readTimeMin: Math.max(1, Math.round(translatedText.split(' ').length / 180))
+          simplified: translatedText.simplified,
+          keyPoints: translatedText.keyPoints,
+          termExplanations: translatedText.termExplanations,
+          readTimeMin: translatedText.readTimeMin
         }
       }
       setSimplified(result.simplified)
@@ -276,117 +284,22 @@ function App() {
     }
   }
 
-  // Direct translation function using multiple APIs
-  async function translateTextDirect(text: string, targetLanguage: string): Promise<string> {
-    const LANGUAGE_CODES: { [key: string]: string } = {
-      'Vietnamese': 'vi',
-      'Thai': 'th',
-      'Spanish': 'es',
-      'French': 'fr',
-      'German': 'de',
-      'Japanese': 'ja',
-      'Korean': 'ko',
-      'Chinese': 'zh',
-      'Arabic': 'ar',
-      'Hindi': 'hi',
-      'Portuguese': 'pt',
-      'Russian': 'ru',
-      'Italian': 'it',
-      'Dutch': 'nl',
-      'Turkish': 'tr',
-      'Polish': 'pl',
-      'Greek': 'el',
-      'Hebrew': 'he',
-      'Persian': 'fa',
-      'Urdu': 'ur',
-      'Bengali': 'bn',
-      'Tamil': 'ta',
-      'Telugu': 'te',
-      'Gujarati': 'gu',
-      'Kannada': 'kn',
-      'Malayalam': 'ml',
-      'Punjabi': 'pa',
-      'Marathi': 'mr',
-      'Nepali': 'ne',
-      'Sinhala': 'si',
-      'Burmese': 'my',
-      'Khmer': 'km',
-      'Lao': 'lo'
-    }
-    
-    const targetCode = LANGUAGE_CODES[targetLanguage] || 'vi'
-    
-    // Hardcoded translations for common phrases
-    const commonTranslations: { [key: string]: { [key: string]: string } } = {
-      'vi': {
-        'hello': 'xin chào',
-        'thank you': 'cảm ơn',
-        'goodbye': 'tạm biệt',
-        'yes': 'có',
-        'no': 'không',
-        'please': 'làm ơn',
-        'excuse me': 'xin lỗi',
-        'how much': 'bao nhiêu',
-        'what is the price': 'giá bao nhiêu',
-        'where is': 'ở đâu',
-        'how much does this cost': 'cái này giá bao nhiêu',
-        'what is the cost': 'chi phí là bao nhiêu',
-        'can you make it cheaper': 'có thể giảm giá không',
-        'do you have this in a different size': 'có cỡ khác không',
-        'i need help': 'tôi cần giúp đỡ',
-        'where is the bathroom': 'nhà vệ sinh ở đâu',
-        'do you speak english': 'bạn có nói tiếng anh không',
-        'i am lost': 'tôi bị lạc',
-        'call the police': 'gọi cảnh sát',
-        'i need a doctor': 'tôi cần bác sĩ'
-      }
-    }
-    
-    // Check for hardcoded translations first
-    const lowerText = text.toLowerCase().trim()
-    if (commonTranslations[targetCode] && commonTranslations[targetCode][lowerText]) {
-      return commonTranslations[targetCode][lowerText]
-    }
-    
-    // Try Google Translate API
-    try {
-      const response = await fetch(
-        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetCode}&dt=t&q=${encodeURIComponent(text)}`
-      )
-      
-      if (response.ok) {
-        const data = await response.json()
-        if (data && data[0] && data[0][0] && data[0][0][0]) {
-          return data[0][0][0]
-        }
-      }
-    } catch (error) {
-      console.log('Google Translate failed:', error)
-    }
-    
-    // Try MyMemory API
-    try {
-      const response = await fetch(
-        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetCode}`
-      )
-      
-      if (response.ok) {
-        const data = await response.json()
-        if (data.responseStatus === 200 && data.responseData?.translatedText) {
-          return data.responseData.translatedText
-        }
-      }
-    } catch (error) {
-      console.log('MyMemory API failed:', error)
-    }
-    
-    // Final fallback
-    return `[Translated to ${targetLanguage}] ${text}`
-  }
 
   function onSave() {
-    if (!source || !simplified) return
+    console.log('onSave called')
+    console.log('source:', source ? 'exists' : 'missing')
+    console.log('simplified:', simplified ? 'exists' : 'missing')
+    
+    if (!source || !simplified) {
+      console.log('Cannot save: missing source or simplified content')
+      alert('Cannot save: Please load and translate content first')
+      return
+    }
+    
     const title = source.slice(0, 60) + (source.length > 60 ? '…' : '')
+    console.log('Saving document with title:', title)
+    
+    try {
     add({
       id: crypto.randomUUID(),
       title,
@@ -397,13 +310,76 @@ function App() {
       keyPoints,
       termExplanations,
     })
+      console.log('Document saved successfully')
+      alert('Document saved successfully! You can find it in your library.')
+    } catch (error) {
+      console.error('Error saving document:', error)
+      alert('Error saving document: ' + (error instanceof Error ? error.message : 'Unknown error'))
+    }
   }
+
+  function onDownload() {
+    if (!simplified) {
+      alert('No simplified content to download. Please translate content first.')
+      return
+    }
+
+    try {
+      // Create a clean filename with timestamp
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-')
+      const languageSuffix = language === 'English' ? '' : `_${language}`
+      const filename = `wanderlingo_simplified${languageSuffix}_${timestamp}.txt`
+      
+      // Create the content with metadata
+      const content = [
+        `WanderLingo - Simplified Content`,
+        `Generated: ${new Date().toLocaleString()}`,
+        `Language: ${language}`,
+        `Read Time: ~${readTimeMin} min`,
+        `\n${'='.repeat(50)}`,
+        `\nSIMPLIFIED CONTENT:\n`,
+        simplified,
+        `\n\n${'='.repeat(50)}`,
+        `\nKEY POINTS:\n`,
+        keyPoints.map((point, index) => `${index + 1}. ${point}`).join('\n'),
+        `\n\n${'='.repeat(50)}`,
+        `\nTERM EXPLANATIONS:\n`,
+        termExplanations.map(term => `• ${term.term}: ${term.explanation}`).join('\n')
+      ].join('\n')
+
+      // Create and download the file
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      
+      console.log('File downloaded successfully:', filename)
+      alert(`File downloaded successfully as: ${filename}`)
+    } catch (error) {
+      console.error('Error downloading file:', error)
+      alert('Error downloading file: ' + (error instanceof Error ? error.message : 'Unknown error'))
+    }
+  }
+
 
   return (
     <div className={appClass} dir={dirAttr} style={{ fontSize: `${textSize}px` }}>
       <header>
-        <h1>🌍 WanderLingo</h1>
+        <div className="header-content">
+          <div className="logo-section">
+            <div className="logo">
+              <div className="logo-icon">🌍</div>
+              <div className="logo-text">
+                <h1>WanderLingo</h1>
         <p className="tagline">AI Travel Translator for Nomads & Travelers</p>
+              </div>
+            </div>
+          </div>
         
         <div className="mode-selector">
           <button 
@@ -439,15 +415,24 @@ function App() {
           >
             📄 Nomad Mode
           </button>
+          <button 
+            onClick={exportJson}
+            style={{
+              background: 'linear-gradient(135deg, #FF9800 0%, #F57C00 100%)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              padding: '0.75rem 1.5rem',
+              cursor: 'pointer',
+              fontWeight: '600',
+              marginLeft: '1rem',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            📤 Export Library
+          </button>
         </div>
-
-        <nav>
-          <button onClick={exportJson}>Export Library</button>
-          <label className="import">
-            Import
-            <input type="file" accept="application/json" onChange={(e) => e.target.files && importJson(e.target.files[0])} />
-          </label>
-        </nav>
+        </div>
       </header>
 
       {mode === 'traveler' ? (
@@ -531,22 +516,6 @@ function App() {
                 </button>
                 <button 
                   className="feature-tab"
-                  onClick={() => setContextTopic('page')}
-                  style={{
-                    background: contextTopic === 'page' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#f5f5f5',
-                    color: contextTopic === 'page' ? 'white' : '#333',
-                    border: 'none',
-                    borderRadius: '6px',
-                    padding: '0.75rem 1rem',
-                    cursor: 'pointer',
-                    fontWeight: '600',
-                    marginRight: '0.5rem'
-                  }}
-                >
-                  🌐 Translate Page
-                </button>
-                <button 
-                  className="feature-tab"
                   onClick={() => setContextTopic('ai-chat')}
                   style={{
                     background: contextTopic === 'ai-chat' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#f5f5f5',
@@ -595,28 +564,6 @@ function App() {
                     >
                       <span>🎤</span>
                       <span>Voice Input</span>
-                    </button>
-                    <button 
-                      id="voiceOutputBtn"
-                      style={{
-                        flex: 1,
-                        padding: '8px 12px',
-                        background: 'rgba(102, 126, 234, 0.1)',
-                        border: '1px solid #667eea',
-                        borderRadius: '6px',
-                        color: '#667eea',
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                        fontWeight: '500',
-                        transition: 'all 0.2s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '4px'
-                      }}
-                    >
-                      <span>🔊</span>
-                      <span>Listen</span>
                     </button>
                     <button 
                       id="stopVoiceBtn"
@@ -1113,14 +1060,14 @@ function App() {
               setHighContrast={setHighContrast}
             />
 
-            <Editor url={url} setUrl={setUrl} source={source} setSource={setSource} onFetchUrl={onFetchUrl} />
+            <Editor url={url} setUrl={setUrl} source={source} setSource={setSource} onFetchUrl={onFetchUrl} loading={loading} />
 
             <div className="actions">
               <button onClick={onSimplify} disabled={loading}>
                 {loading ? 'Working…' : language === 'English' ? 'Simplify' : 'Translate & Simplify'}
               </button>
               <button onClick={onSave} disabled={!simplified}>Save Document</button>
-              <button onClick={() => window.print()} disabled={!simplified}>Download PDF/Print</button>
+              <button onClick={onDownload} disabled={!simplified}>Download Text</button>
             </div>
           </div>
         </div>

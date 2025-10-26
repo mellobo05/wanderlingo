@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 import { getConversationAI, type ConversationContext, type ConversationSuggestion } from '../services/conversation'
 import { translationService, LANGUAGE_CODES } from '../services/translation'
 import { speak, stopSpeaking, speakInLanguage } from '../services/ai'
-import { DocumentTranslator } from './DocumentTranslator'
 
 export interface TravelerModeProps {
   isActive: boolean
@@ -34,7 +33,6 @@ export function TravelerMode({ isActive, onClose }: TravelerModeProps) {
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [isPlayingTranslation, setIsPlayingTranslation] = useState(false)
   const [voiceEnabled, setVoiceEnabled] = useState(false)
-  const [showDocumentTranslator, setShowDocumentTranslator] = useState(false)
   
   const conversationAI = useRef(getConversationAI({
     situation,
@@ -240,25 +238,6 @@ export function TravelerMode({ isActive, onClose }: TravelerModeProps) {
             </label>
           </div>
 
-          <div className="control-group">
-            <button
-              onClick={() => setShowDocumentTranslator(true)}
-              className="document-translator-btn"
-              style={{
-                background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '0.75rem 1rem',
-                cursor: 'pointer',
-                fontWeight: '600',
-                width: '100%',
-                transition: 'all 0.2s'
-              }}
-            >
-              📄 Translate Documents
-            </button>
-          </div>
         </div>
 
         <div className="conversation-area">
@@ -416,12 +395,6 @@ export function TravelerMode({ isActive, onClose }: TravelerModeProps) {
           </small>
         </div>
       </div>
-
-      <DocumentTranslator
-        isActive={showDocumentTranslator}
-        onClose={() => setShowDocumentTranslator(false)}
-        targetLanguage={currentLanguage}
-      />
     </div>
   )
 }
