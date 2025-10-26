@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import { Controls } from './components/Controls'
 import { Editor } from './components/Editor'
@@ -32,7 +32,22 @@ function App() {
   const { docs, add, remove, exportJson } = useLibrary()
 
   const dirAttr = rtl ? 'rtl' : 'ltr'
-  const appClass = useMemo(() => (highContrast ? 'app high-contrast' : 'app'), [highContrast])
+  const appClass = highContrast ? 'app high-contrast' : 'app'
+
+  // Function to clear content when switching modes
+  const clearContent = () => {
+    setSource('')
+    setSimplified('')
+    setKeyPoints([])
+    setTermExplanations([])
+    setReadTimeMin(1)
+    setUrl('')
+  }
+
+  // Clear content when switching modes
+  useEffect(() => {
+    clearContent()
+  }, [mode])
 
   // Function to extract readable text from HTML
   function extractTextFromHTML(html: string): string {
@@ -589,23 +604,40 @@ function App() {
                     </button>
                   </div>
                   
-                  <button 
-                    onClick={onSimplify} 
-                    disabled={loading || !source.trim()}
-                    style={{
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '8px',
-                      padding: '1rem 2rem',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      fontSize: '16px',
-                      marginTop: '1rem'
-                    }}
-                  >
-                    {loading ? 'Translating...' : 'Translate'}
-                  </button>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '1rem' }}>
+                    <button 
+                      onClick={onSimplify} 
+                      disabled={loading || !source.trim()}
+                      style={{
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '1rem 2rem',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        fontSize: '16px',
+                        flex: 1
+                      }}
+                    >
+                      {loading ? 'Translating...' : 'Translate'}
+                    </button>
+                    <button 
+                      onClick={clearContent}
+                      style={{
+                        background: '#f44336',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '1rem 1.5rem',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        fontSize: '16px'
+                      }}
+                    >
+                      Clear
+                    </button>
+                  </div>
 
                   {/* AI-Powered Next Sentence Suggestions */}
                   {source.trim() && (
@@ -1068,6 +1100,7 @@ function App() {
               </button>
               <button onClick={onSave} disabled={!simplified}>Save Document</button>
               <button onClick={onDownload} disabled={!simplified}>Download Text</button>
+              <button onClick={clearContent} style={{ background: '#f44336', color: 'white' }}>Clear All</button>
             </div>
           </div>
         </div>

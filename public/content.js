@@ -1,4 +1,4 @@
-// Content script for LocaLingo Chrome Extension
+// Content script for WanderLingo Chrome Extension
 // This script runs on all web pages to provide translation functionality
 
 // Inject CSS
@@ -71,7 +71,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Create floating translation button
   function createFloatingButton() {
     const button = document.createElement('div');
-    button.id = 'localingo-floating-btn';
+    button.id = 'wanderlingo-floating-btn';
     button.innerHTML = '🌍';
     button.style.cssText = `
       position: fixed;
@@ -102,7 +102,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     
     button.addEventListener('click', () => {
-      chrome.runtime.sendMessage({ action: 'openPopup' });
+      chrome.runtime.sendMessage({ action: 'openPop' });
     });
     
     document.body.appendChild(button);
@@ -111,7 +111,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Create translation overlay
   function createTranslationOverlay() {
     const overlay = document.createElement('div');
-    overlay.id = 'localingo-overlay';
+    overlay.id = 'wanderlingo-overlay';
     overlay.style.cssText = `
       position: fixed;
       top: 0;
@@ -136,7 +136,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         overflow-y: auto;
       ">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-          <h2 style="margin: 0; color: #333;">🌍 LocaLingo Translation</h2>
+          <h2 style="margin: 0; color: #333;">🌍 WanderLingo Translation</h2>
           <button id="close-overlay" style="
             background: none;
             border: none;
