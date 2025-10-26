@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-console.log('🚀 Building LocaLingo Chrome Extension...');
+console.log('🚀 Building WanderLingo Chrome Extension...');
 
 // Create dist directory if it doesn't exist
 const distDir = path.join(__dirname, 'dist');
@@ -80,4 +80,4 @@ console.log('🔧 To install:');
 console.log('   1. Open Chrome and go to chrome://extensions/');
 console.log('   2. Enable "Developer mode"');
 console.log('   3. Click "Load unpacked" and select the "dist" folder');
-console.log('   4. The LocaLingo extension will be installed!');
+console.log('   4. The WanderLingo extension will be installed!');
