@@ -742,40 +742,29 @@ async function translateText(text, targetLanguage) {
   
   try {
     // Try MyMemory API first
-    const response = await fetch(
-      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetCode}`
-    );
-    
-    if (response.ok) {
-      const data = await response.json();
-      if (data.responseStatus === 200 && data.responseData?.translatedText) {
-        return data.responseData.translatedText;
-      }
-    }
-    
-    // Fallback to LibreTranslate
-    const libreResponse = await fetch('https://libretranslate.com/translate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        q: text,
-        source: 'en',
-        target: targetCode,
-        format: 'text'
-      })
-    });
-    
-    if (libreResponse.ok) {
-      const libreData = await libreResponse.json();
-      if (libreData.translatedText) {
-        return libreData.translatedText;
-      }
-    }
-    
-    // Try Google Translate (no API key required for basic usage)
     try {
+      const response = await fetch(
+        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetCode}`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.responseStatus === 200 && data.responseData?.translatedText) {
+          console.log('MyMemory API successful');
+          return data.responseData.translatedText;
+        }
+      } else if (response.status === 429) {
+        console.log('MyMemory rate limit hit (429), trying Google Translate...');
+      } else {
+        console.log('MyMemory API failed with status:', response.status);
+      }
+    } catch (myMemoryError) {
+      console.log('MyMemory API error:', myMemoryError);
+    }
+    
+    // Try Google Translate (more reliable than LibreTranslate)
+    try {
+      console.log('Trying Google Translate API...');
       const googleResponse = await fetch(
         `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetCode}&dt=t&q=${encodeURIComponent(text)}`
       );
@@ -783,11 +772,39 @@ async function translateText(text, targetLanguage) {
       if (googleResponse.ok) {
         const googleData = await googleResponse.json();
         if (googleData && googleData[0] && googleData[0][0] && googleData[0][0][0]) {
+          console.log('Google Translate successful');
           return googleData[0][0][0];
         }
       }
     } catch (googleError) {
-      console.log('Google Translate fallback failed:', googleError);
+      console.log('Google Translate failed:', googleError);
+    }
+    
+    // Try LibreTranslate as last fallback
+    try {
+      console.log('Trying LibreTranslate API...');
+      const libreResponse = await fetch('https://libretranslate.com/translate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          q: text,
+          source: 'en',
+          target: targetCode,
+          format: 'text'
+        })
+      });
+      
+      if (libreResponse.ok) {
+        const libreData = await libreResponse.json();
+        if (libreData.translatedText) {
+          console.log('LibreTranslate successful');
+          return libreData.translatedText;
+        }
+      }
+    } catch (libreError) {
+      console.log('LibreTranslate failed:', libreError);
     }
     
     // Final fallback
@@ -795,6 +812,6 @@ async function translateText(text, targetLanguage) {
     return `[Translated to ${targetLanguage}] ${text}`;
   } catch (error) {
     console.error('Translation error:', error);
-    throw error;
+    return `[Translation failed] ${text}`;
   }
 }
