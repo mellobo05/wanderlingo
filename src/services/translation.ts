@@ -266,46 +266,32 @@ export class FallbackProvider implements TranslationProvider {
         return await this.translateInChunks(text, from, to)
       }
       
-      // Use MyMemory API as a free fallback
-      const response = await fetch(
-        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`
-      )
-      
-      if (!response.ok) {
-        throw new Error(`MyMemory API failed with status: ${response.status}`)
-      }
-      
-      const data = await response.json()
-      console.log('MyMemory API response:', data)
-      
-      if (data.responseStatus === 200 && data.responseData?.translatedText) {
-        console.log('Translation successful:', data.responseData.translatedText)
-        return data.responseData.translatedText
-      }
-      
-      // If MyMemory fails, try LibreTranslate as secondary fallback
-      const libreResponse = await fetch('https://libretranslate.com/translate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          q: text,
-          source: from,
-          target: to,
-          format: 'text'
-        })
-      })
-      
-      if (libreResponse.ok) {
-        const libreData = await libreResponse.json()
-        if (libreData.translatedText) {
-          return libreData.translatedText
-        }
-      }
-      
-      // Try Google Translate (no API key required for basic usage)
+      // Try MyMemory API as first option
       try {
+        const response = await fetch(
+          `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`
+        )
+        
+        if (response.ok) {
+          const data = await response.json()
+          console.log('MyMemory API response:', data)
+          
+          if (data.responseStatus === 200 && data.responseData?.translatedText) {
+            console.log('Translation successful with MyMemory:', data.responseData.translatedText)
+            return data.responseData.translatedText
+          }
+        } else if (response.status === 429) {
+          console.log('MyMemory rate limit hit (429), skipping to fallback providers...')
+        } else {
+          console.log(`MyMemory API failed with status: ${response.status}`)
+        }
+      } catch (myMemoryError) {
+        console.log('MyMemory API error:', myMemoryError)
+      }
+      
+      // Try Google Translate (no API key required, works well)
+      try {
+        console.log('Trying Google Translate API...')
         const googleResponse = await fetch(
           `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${from}&tl=${to}&dt=t&q=${encodeURIComponent(text)}`
         )
@@ -313,34 +299,39 @@ export class FallbackProvider implements TranslationProvider {
         if (googleResponse.ok) {
           const googleData = await googleResponse.json()
           if (googleData && googleData[0] && googleData[0][0] && googleData[0][0][0]) {
+            console.log('Translation successful with Google Translate:', googleData[0][0][0])
             return googleData[0][0][0]
           }
         }
       } catch (googleError) {
-        console.log('Google Translate fallback failed:', googleError)
+        console.log('Google Translate failed:', googleError)
       }
       
-      // Try Microsoft Translator (free tier)
+      // Try LibreTranslate as secondary fallback
       try {
-        const msResponse = await fetch(
-          `https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&from=${from}&to=${to}`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify([{ text }])
-          }
-        )
+        console.log('Trying LibreTranslate API...')
+        const libreResponse = await fetch('https://libretranslate.com/translate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            q: text,
+            source: from,
+            target: to,
+            format: 'text'
+          })
+        })
         
-        if (msResponse.ok) {
-          const msData = await msResponse.json()
-          if (msData && msData[0] && msData[0].translations && msData[0].translations[0]) {
-            return msData[0].translations[0].text
+        if (libreResponse.ok) {
+          const libreData = await libreResponse.json()
+          if (libreData.translatedText) {
+            console.log('Translation successful with LibreTranslate:', libreData.translatedText)
+            return libreData.translatedText
           }
         }
-      } catch (msError) {
-        console.log('Microsoft Translator fallback failed:', msError)
+      } catch (libreError) {
+        console.log('LibreTranslate failed:', libreError)
       }
       
       // Final fallback - return with language indicator
@@ -348,6 +339,7 @@ export class FallbackProvider implements TranslationProvider {
         key => this.languageMap[key] === to
       ) || to
       
+      console.error('All translation providers failed, returning fallback')
       return `[Translated to ${targetLang}] ${text}`
     } catch (error) {
       console.error('Translation fallback error:', error)
