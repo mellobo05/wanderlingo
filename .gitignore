@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Windows system files
+_Thumbs.db
+Thumbs.db
+Desktop.ini
