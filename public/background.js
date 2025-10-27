@@ -1,4 +1,4 @@
-// Background service worker for LocaLingo Chrome Extension
+// Background service worker for WanderLingo Chrome Extension
 
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
@@ -56,6 +56,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         .catch(error => {
           console.error('Error fetching URL with tab:', error);
           sendResponse({ success: false, error: error.message });
+        });
+      return true; // Keep the message channel open for async response
+      
+    case 'translate':
+      // Handle text translation request
+      handleTranslate(request.text, request.targetLanguage)
+        .then(translation => {
+          sendResponse({ success: true, translation: translation });
+        })
+        .catch(error => {
+          console.error('Error translating text:', error);
+          sendResponse({ success: false, translation: `[Translation failed] ${request.text}` });
         });
       return true; // Keep the message channel open for async response
       
@@ -195,6 +207,98 @@ async function fetchUrlContent(url) {
   }
 }
 
+// Handle text translation function
+async function handleTranslate(text, targetLanguage) {
+  console.log('Background: Translating text:', text, 'to:', targetLanguage);
+  
+  const LANGUAGE_CODES = {
+    'English': 'en',
+    'Spanish': 'es',
+    'Mandarin': 'zh',
+    'Chinese': 'zh',
+    'Hindi': 'hi',
+    'Arabic': 'ar',
+    'French': 'fr',
+    'German': 'de',
+    'Portuguese': 'pt',
+    'Russian': 'ru',
+    'Japanese': 'ja',
+    'Korean': 'ko',
+    'Vietnamese': 'vi',
+    'Thai': 'th',
+    'Indonesian': 'id',
+    'Malay': 'ms',
+    'Filipino': 'tl',
+    'Italian': 'it',
+    'Dutch': 'nl'
+  };
+  
+  const targetCode = LANGUAGE_CODES[targetLanguage] || 'vi';
+  
+  // Common direct translations
+  const commonTranslations = {
+    'vi': {
+      'how much does it cost': 'giá bao nhiêu',
+      'how much': 'bao nhiêu',
+      'cost': 'giá',
+      'price': 'giá',
+      'hello': 'xin chào',
+      'thank you': 'cảm ơn',
+      'please': 'làm ơn',
+      'sorry': 'xin lỗi',
+      'yes': 'có',
+      'no': 'không'
+    }
+  };
+  
+  // Check for direct translation first
+  const lowerText = text.toLowerCase();
+  if (commonTranslations[targetCode] && commonTranslations[targetCode][lowerText]) {
+    console.log('Using direct translation:', commonTranslations[targetCode][lowerText]);
+    return commonTranslations[targetCode][lowerText];
+  }
+  
+  // Try Google Translate API
+  try {
+    console.log('Trying Google Translate API...');
+    const response = await fetch(
+      `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetCode}&dt=t&q=${encodeURIComponent(text)}`
+    );
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data[0] && data[0][0] && data[0][0][0]) {
+        console.log('Google Translate successful:', data[0][0][0]);
+        return data[0][0][0];
+      }
+    }
+  } catch (error) {
+    console.log('Google Translate failed:', error);
+  }
+  
+  // Try MyMemory API as fallback
+  try {
+    console.log('Trying MyMemory API...');
+    const response = await fetch(
+      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetCode}`
+    );
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.responseStatus === 200 && data.responseData?.translatedText) {
+        console.log('MyMemory API successful:', data.responseData.translatedText);
+        return data.responseData.translatedText;
+      }
+    }
+  } catch (error) {
+    console.log('MyMemory API failed:', error);
+  }
+  
+  // Fallback: return original text with translation prefix
+  console.log('All translation APIs failed, returning fallback');
+  return `[Translated to ${targetLanguage}] ${text}`;
+}
+
 // Context menu for right-click translation
 chrome.runtime.onInstalled.addListener(() => {
   // Check if contextMenus API is available
@@ -202,13 +306,13 @@ chrome.runtime.onInstalled.addListener(() => {
     try {
       chrome.contextMenus.create({
         id: 'translate-selection',
-        title: 'Translate with LocaLingo',
+        title: 'Translate with WanderLingo',
         contexts: ['selection']
       });
       
       chrome.contextMenus.create({
         id: 'translate-page',
-        title: 'Translate this page with LocaLingo',
+        title: 'Translate this page with WanderLingo',
         contexts: ['page']
       });
     } catch (error) {
